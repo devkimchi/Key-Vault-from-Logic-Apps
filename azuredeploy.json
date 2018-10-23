@@ -1,0 +1,156 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "logicAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Logic App."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Key Vault."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location of the Logic App."
+      },
+      "defaultValue": "[resourceGroup().location]"
+    }
+  },
+  "variables": {
+    "logicApp": {
+      "name": "[parameters('logicAppName')]",
+      "apiVersion": "[providers('Microsoft.Logic', 'workflows').apiVersions[0]]",
+      "location": "[parameters('location')]"
+    },
+    "keyVault": {
+      "name": "[parameters('keyVaultName')]",
+      "apiVersion": "2016-10-01",
+      "location": "[parameters('location')]",
+      "baseUri": "[concat('https://', parameters('keyVaultName'), '.vault.azure.net/')]"
+    },
+    "tags": {
+      "author": "Justin Yoo",
+      "profile": "https://twitter.com/justinchronicle",
+      "projectUrl": "https://github.com/devkimchi/ARM-Templates-in-YAML",
+      "repositoryUrl": "https://github.com/devkimchi/ARM-Templates-in-YAML",
+      "license": "https://raw.githubusercontent.com/devkimchi/ARM-Templates-in-YAML/master/LICENSE"
+    }
+  },
+  "resources": [
+    {
+      "comments": "= = = Logic App with Managed Identity = = =",
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "[variables('logicApp').apiVersion]",
+      "location": "[variables('logicApp').location]",
+      "tags": "[variables('tags')]",
+      "name": "[variables('logicApp').name]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "state": "Enabled",
+        "parameters": {},
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "keyVault": {
+              "type": "object",
+              "defaultValue": "[variables('keyVault')]"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {}
+              }
+            }
+          },
+          "actions": {
+            "GetSecret": {
+              "type": "Http",
+              "runAfter": {},
+              "inputs": {
+                "method": "GET",
+                "uri": "@{parameters('keyVault')['baseUri']}secrets/@{triggerBody()?.name}",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "audience": "https://vault.azure.net"
+                },
+                "queries": {
+                  "api-version": "@parameters('keyVault')['apiVersion']"
+                }
+              }
+            },
+            "Response": {
+              "type": "Response",
+              "runAfter": {
+                "GetSecret": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "kind": "HTTP",
+              "inputs": {
+                "statusCode": "@outputs('GetSecret').statusCode",
+                "body": "@body('GetSecret')"
+              }
+            }
+          },
+          "outputs": {}
+        }
+      }
+    },
+    {
+      "comments": "= = = Key Vault = = =",
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "[variables('keyVault').apiVersion]",
+      "location": "[variables('keyVault').location]",
+      "tags": "[variables('tags')]",
+      "name": "[variables('keyVault').name]",
+      "dependsOn": [
+        "[variables('logicApp').name]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "Standard",
+          "family": "A"
+        },
+        "tenantId": "[subscription().tenantId]",
+        "enabledForDeployment": false,
+        "enabledForDiskEncryption": false,
+        "enabledForTemplateDeployment": false,
+        "accessPolicies": [
+          {
+            "tenantId": "[reference(variables('logicApp').name, variables('logicApp').apiVersion, 'Full').identity.tenantId]",
+            "objectId": "[reference(variables('logicApp').name, variables('logicApp').apiVersion, 'FUll').identity.principalId]",
+            "permissions": {
+              "secrets": [
+                "Get",
+                "List"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "subscriptionId": {
+      "type": "string",
+      "value": "[subscription().subscriptionId]"
+    },
+    "resourceGroup": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    }
+  }
+}
