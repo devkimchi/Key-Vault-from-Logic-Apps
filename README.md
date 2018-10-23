@@ -1,11 +1,11 @@
 # Key Vault from Logic Apps #
 
-This provides a sample code that Azure Logic App can access to Key Vault using Managed Identity.
+This provides a sample code that [Azure Logic App can access to Key Vault using Managed Identity](https://docs.microsoft.com/en-us/azure/logic-apps/create-managed-service-identity).
 
 
 ## Getting Started ##
 
-The ARM template consists of two resources &nbsp; Logic App and Key Vault.
+The ARM template consists of two resources &ndash; Logic App and Key Vault.
 
 
 ### Deployment through Azure Portal ###
