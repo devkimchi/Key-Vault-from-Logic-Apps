@@ -27,9 +27,9 @@ variables:
   tags:
     author: Justin Yoo
     profile: 'https://twitter.com/justinchronicle'
-    projectUrl: 'https://github.com/devkimchi/ARM-Templates-in-YAML'
-    repositoryUrl: 'https://github.com/devkimchi/ARM-Templates-in-YAML'
-    license: 'https://raw.githubusercontent.com/devkimchi/ARM-Templates-in-YAML/master/LICENSE'
+    projectUrl: 'https://github.com/devkimchi/Key-Vault-from-Logic-Apps'
+    repositoryUrl: 'https://github.com/devkimchi/Key-Vault-from-Logic-Apps'
+    license: 'https://raw.githubusercontent.com/devkimchi/Key-Vault-from-Logic-Apps/master/LICENSE'
 resources:
 - comments: "= = = Logic App with Managed Identity = = ="
   type: Microsoft.Logic/workflows
